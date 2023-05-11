@@ -1,3 +1,5 @@
+import sys
+sys.path.append("../../krotov/src")
 import qutip
 import numpy as np
 import scipy
@@ -16,7 +18,7 @@ def generate_arrays(d1 = [], d2 = []):
 
     return arr1, arr2
 
-def hamiltonian(guess_control, N = 3, d1 = [], d2 = []):
+def hamiltonian(guess_control,guess_control2, N = 3, d1 = [], d2 = []):
     """Two-level-system Hamiltonian
 
     Args:
@@ -29,15 +31,11 @@ def hamiltonian(guess_control, N = 3, d1 = [], d2 = []):
     #     diag.append((i+1)**2/4)
 
     arr1,arr2 = generate_arrays(d1,d2); 
-    H0 = qutip.Qobj(arr1)
-    H1 = qutip.Qobj( arr2 )
+    H0 = qutip.Qobj(arr2)
+    H1 = qutip.Qobj(arr1)
+    H2 = qutip.Qobj(arr2)
 
-    # def guess_control(t, args):
-    #     return ampl0 * krotov.shapes.blackman(
-    #         t, t_start=0, t_stop=5
-    #     )
-
-    return [H0, [H1, guess_control]]
+    return [H0, [H1, guess_control],[H2, guess_control2]]
 
 def plot_pulse(pulse, tlist):
     fig, ax = plt.subplots()
@@ -75,9 +73,11 @@ def GetDimInfo(iteration,n_iters,Dim):
         ctr_label = None
 
     if ctr_label:
-        pop_labels = ['{number} {tipo}'.format(number = f"{i}",tipo = f"{ctr_label}") for i in range(Dim)]
+        pop_labels = ['{number} {tipo}'.format(number = i,tipo = ctr_label) for i in range(Dim)]
+        ctr_labels = ['{i} {ctr_label}'.format(i = i + 1,ctr_label = ctr_label) for i in range(N_Controls)]
     else:
         pop_labels = [None for i in range(Dim)]
+        ctr_labels = [None for i in range (N_Controls)]
 
     #Compute the list of colors
     color_map = cm.get_cmap('Set1', Dim)  # Get a colormap with N colors
@@ -86,7 +86,7 @@ def GetDimInfo(iteration,n_iters,Dim):
     # Convert RGB values to hexadecimal color codes
     colors = ['#%02x%02x%02x' % tuple(int(255 * c) for c in color) for color in color_set]
 
-    return ls,alpha,ctr_label,pop_labels,colors
+    return ls,alpha,ctr_labels,pop_labels,colors
 
 def plot_iterations(opt_result):
     """Plot the control fields in population dynamics over all iterations.
@@ -106,16 +106,21 @@ def plot_iterations(opt_result):
             opt_result.tlist, e_ops=projs
         )
 
-        ls,alpha,ctr_label,pop_labels,colors = GetDimInfo(iteration,n_iters,Dim)
-
-        ax_ctr.plot(
-            dynamics.times,
-            controls[0],
-            label=ctr_label,
-            color='black',
-            ls=ls,
-            alpha=alpha,
-        )
+        ls,alpha,ctr_labels,pop_labels,colors = GetDimInfo(iteration,n_iters,Dim)
+        
+        if len(controls) > Dim:
+            raise Exception("Dimension lower than controls, not enough colors")
+            
+            
+        for i in range(len(controls)):    
+            ax_ctr.plot(
+                dynamics.times,
+                controls[i],
+                label=ctr_labels[i],
+                color=colors[i],
+                ls=ls,
+                alpha=alpha,
+            )
 
         for i in range(Dim):
 
@@ -140,29 +145,38 @@ def plot_iterations(opt_result):
 #-------------------------------------------------------------------------------------------------
 
 #3 level Hamiltonian
-Dim = 3
+Dim = 2
+N_Controls = 2
+
+diag = []
+for i in range(Dim-1):
+    diag.append(1)
+
+d2 = diag
 
 diag = []
 for i in range(Dim):
-    diag.append(1)
-
+    diag.append((i+1)**2/4)
 d1 = diag
-d2 = np.ones(Dim-1) * 2
 
 def S(t):
     """Shape function for the field update"""
     return krotov.shapes.flattop(
         t, t_start=0, t_stop=5, t_rise=0.3, t_fall=0.3, func='blackman'
     )
-
-def guess_control(t, args, omega=1.0, ampl0=0.2,):
+def guess_control(t, args, omega=1.0, ampl0=0.2):
     return ampl0 * krotov.shapes.blackman(
         t, t_start=0, t_stop=5
     )
+def guess_control2(t, args):
+    return krotov.shapes.flattop(
+        t, t_start = 0, t_stop = 5, t_rise = 0.1, t_fall= 0.1
+    )
 
-H1 = hamiltonian(guess_control,N=Dim,d1=d1,d2=d2)
+H1 = hamiltonian(guess_control,guess_control2,N=Dim,d1=d1,d2=d2)
 tlist = np.linspace(0, 5, 500)
 plot_pulse(H1[1][1], tlist)
+plot_pulse(H1[2][1], tlist)
 
 kets = np.eye(Dim)
 qKets  = []
@@ -171,12 +185,13 @@ for i in range(Dim):
 
 objectives = [
     krotov.Objective(
-        initial_state= qKets[0], target=qKets[2], H=H1
+        initial_state= qKets[0], target=qKets[-1], H=H1
     )
 ]
 
 pulse_options = {
-    H1[1][1]: dict(lambda_a=5, update_shape=S)
+    H1[1][1]: dict(lambda_a=5, update_shape=S),
+    H1[2][1]: dict(lambda_a=5, update_shape=S)
 }
 
 projs = []
@@ -220,18 +235,30 @@ control_interp_func = lambda t: CubicSpline(t_interp, prev_opt_controls)(t)  # p
 def guess_control(t, args):
     return control_interp_func(t)
 
+prev_opt_controls2 =opt_result.optimized_controls[1]
+# Interpolate the optimized_controls array using a cubic spline
+control_interp_func2 = lambda t: CubicSpline(t_interp, prev_opt_controls2)(t)  # perform cubic spline interpolation
+
+def guess_control2(t, args):
+    return control_interp_func2(t)
+
 #Dim level Hamiltonian with initial guess from prev result
 
-Dim = 4
+Dim = 5
+N_Controls = 2
+
+diag = []
+for i in range(Dim-1):
+    diag.append(1)
+
+d2 = diag
 
 diag = []
 for i in range(Dim):
-    diag.append(1)
-
+    diag.append((i+1)**2/4)
 d1 = diag
-d2 = np.ones(Dim-1) * 2
 
-H2 = hamiltonian(guess_control,N=Dim,d1=d1,d2=d2)
+H2 = hamiltonian(guess_control,guess_control2,N=Dim,d1=d1,d2=d2)
 #tlist = np.linspace(0, 5, 500)
 plot_pulse(H2[1][1], tlist)
 
@@ -247,7 +274,8 @@ objectives = [
 ]
 
 pulse_options = {
-    H2[1][1]: dict(lambda_a=5, update_shape=S)
+    H2[1][1]: dict(lambda_a=5, update_shape=S),
+    H2[2][1]: dict(lambda_a=5, update_shape=S)
 }
 
 projs = []
@@ -266,7 +294,7 @@ opt_result = krotov.optimize_pulses(
     chi_constructor=krotov.functionals.chis_ss,
     info_hook=krotov.info_hooks.print_table(J_T=krotov.functionals.J_T_ss),
     check_convergence=krotov.convergence.Or(
-        krotov.convergence.value_below('1e-4', name='J_T'),
+        krotov.convergence.value_below('1e-3', name='J_T'),
         krotov.convergence.check_monotonic_error,
     ),
     store_all_pulses=True,
