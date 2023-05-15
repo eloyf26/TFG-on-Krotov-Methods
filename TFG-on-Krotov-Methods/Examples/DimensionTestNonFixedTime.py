@@ -143,7 +143,7 @@ def plot_iterations(opt_result):
 
 #3 level Hamiltonian
 Dim = 3
-
+Final_T = 5
 diag = []
 for i in range(Dim):
     diag.append(1)
@@ -163,7 +163,7 @@ def guess_control(t, args, omega=1.0, ampl0=0.2,):
     )
 
 H1 = hamiltonian(guess_control,N=Dim,d1=d1,d2=d2)
-tlist = np.linspace(0, 5, 500)
+tlist = np.linspace(0, Final_T, 500)
 plot_pulse(H1[1][1], tlist)
 
 kets = np.eye(Dim)
@@ -199,9 +199,11 @@ opt_result = krotov.optimize_pulses(
     check_convergence=krotov.convergence.Or(
         krotov.convergence.value_below('1e-4', name='J_T'),
         krotov.convergence.check_monotonic_error,
+        krotov.convergence.dump_result('..\\Controls\\oct_result.dump', every = 1),
     ),
     store_all_pulses=True,
 )
+
 print(opt_result)
 
 opt_dynamics = opt_result.optimized_objectives[0].mesolve(
