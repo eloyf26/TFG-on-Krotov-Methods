@@ -7,7 +7,7 @@ import matplotlib.cm as cm
 import matplotlib.pylab as plt
 import krotov
 from scipy.interpolate import CubicSpline
-
+import csv
 
 def generate_arrays(d1 = [], d2 = []):
     # Create array with d1 on the diagonal
@@ -141,6 +141,29 @@ def plot_iterations(opt_result):
     ax_ctr.set_ylabel('control amplitude')
     plt.show()
 
+def get_J_T_prev(**kwargs):
+        try:
+            return kwargs['info_vals'][-1]
+        except IndexError:
+            return 0
+
+def write_functional_values(**kwargs):
+    """Write the current value of the objective function to a CSV file."""
+    with open('..\\Analisis\\functional_valuesd_dim2.csv', 'a', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        if kwargs['info_vals']:
+            iteration = kwargs['iteration']
+            J_T_val = krotov.functionals.J_T_ss(**kwargs)
+            Σgₐdt = np.sum(kwargs['g_a_integrals'])
+            J = J_T_val + Σgₐdt
+            if iteration > 0:
+                J_T_prev_val = get_J_T_prev(**kwargs)
+                ΔJ_T = J_T_val - J_T_prev_val
+                ΔJ = ΔJ_T + Σgₐdt
+            secs = int(kwargs['stop_time'] - kwargs['start_time'])
+            # J is the SUM of J_T_val and Σgₐdt
+            # ΔJ is the change on J (the sum) and ΔJ_T is the change on J_T_val
+            writer.writerow([iteration, J_T_val, Σgₐdt, J, ΔJ_T, ΔJ, secs ])
 
 #-------------------------------------------------------------------------------------------------
 
@@ -162,17 +185,18 @@ d1 = diag
 
 def S(t):
     """Shape function for the field update"""
+    #return krotov.shapes.one_shape(t)
     return krotov.shapes.flattop(
         t, t_start=0, t_stop=5, t_rise=0.3, t_fall=0.3, func='blackman'
     )
 
 def guess_control(t, args, omega=1.0, ampl0=0.2,):
-    return ampl0 * krotov.shapes.blackman(
-        t, t_start=0, t_stop=5
+    return krotov.shapes.flattop(
+        t, t_start=0, t_stop=5, t_rise=0.3, t_fall=0.3, func='blackman'
     )
 def guess_control2(t, args, omega=1.0, ampl0=0.4,):
-    return ampl0 * krotov.shapes.blackman(
-        t, t_start=0, t_stop=5
+    return krotov.shapes.flattop(
+        t, t_start=0, t_stop=5, t_rise=0.3, t_fall=0.3, func='blackman'
     )
 
 H1 = hamiltonian(guess_control,guess_control2, N=Dim,d1=d1,d2=d2)
@@ -187,7 +211,7 @@ for i in range(Dim):
 
 objectives = [
     krotov.Objective(
-        initial_state= qKets[0], target=qKets[-1], H=H1
+        initial_state= qKets[0], target=qKets[1], H=H1
     )
 ]
 
@@ -212,7 +236,8 @@ opt_result = krotov.optimize_pulses(
     tlist=tlist,
     propagator=krotov.propagators.expm,
     chi_constructor=krotov.functionals.chis_ss,
-    info_hook=krotov.info_hooks.print_table(J_T=krotov.functionals.J_T_ss),
+    info_hook=krotov.info_hooks.chain(krotov.info_hooks.print_table(J_T=krotov.functionals.J_T_ss),
+                                      write_functional_values),
     check_convergence=krotov.convergence.Or(
         krotov.convergence.value_below('1e-3', name='J_T'),
         krotov.convergence.check_monotonic_error,
