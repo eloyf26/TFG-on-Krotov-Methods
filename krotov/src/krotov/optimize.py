@@ -131,7 +131,7 @@ def optimize_pulses(
             equivalent, but :class:`dict` is better for nested indentation.
 
         tlist (numpy.ndarray): Array of time grid values, cf.
-            :func:`~qutip.mesolve.mesolve`
+            :func:`~qutip.mesolve.`
         propagator (callable or list[callable]): Function that propagates the
             state backward or forwards in time by a single time step, between
             two points in `tlist`. Alternatively, a list of functions, one for
@@ -556,14 +556,15 @@ def optimize_pulses(
         if (to_excel):
             for control in optimized_pulses:
                 control_num += 1
-                filename = '..\\Controls\\control{}.xlsx'.format(control_num)
-                if os.path.isfile(filename):
-                    df = pd.read_excel(filename)
-                    df['Values{}'.format(datetime.now().strftime("_%H_%M_%S"))] = control
-                    df.to_excel(filename, index=False)
-                else:
+                filename = '..\\Controls\\control{}_dim_100from6_5_4_state0to1.csv'.format(control_num)
+                if os.path.exists(filename):
+                    if (krotov_iteration % 50 == 0) or (bool(check_convergence(result)) is True):
+                        df = pd.read_csv(filename)
+                        df['Values{}'.format(datetime.now().strftime("_%H_%M_%S"))] = control
+                        df.to_csv(filename, index=False)
+                else:                    
                     df = pd.DataFrame(control, columns=['Values'])
-                    df.to_excel(filename, index=False)
+                    df.to_csv(filename, index=False)
 
         #---------------------------------------------------------------------------------------
         # Convergence check

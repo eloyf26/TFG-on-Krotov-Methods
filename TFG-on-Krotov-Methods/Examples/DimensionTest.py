@@ -1,6 +1,7 @@
 import sys
 sys.path.append("../../krotov/src")
 import qutip
+from qutip import propagator
 import numpy as np
 import scipy
 import matplotlib.cm as cm
@@ -149,7 +150,7 @@ def get_J_T_prev(**kwargs):
 
 def write_functional_values(**kwargs):
     """Write the current value of the objective function to a CSV file."""
-    with open('..\\Analisis\\functional_valuesd_dim2.csv', 'a', newline='') as csvfile:
+    with open('..\\Analisis\\functional_valuesd_dim4.csv', 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
         if kwargs['info_vals']:
             iteration = kwargs['iteration']
@@ -165,10 +166,20 @@ def write_functional_values(**kwargs):
             # ΔJ is the change on J (the sum) and ΔJ_T is the change on J_T_val
             writer.writerow([iteration, J_T_val, Σgₐdt, J, ΔJ_T, ΔJ, secs ])
 
+def krylov_propagator(H, state, dt, c_ops=None, backwards=False, initialize=False):
+    if initialize:
+        return state
+
+    # Here, we're using QuTiP's Krylov propagator
+    U = propagator(H, dt, c_ops, method='krylov')
+
+    new_state = U * state
+
+    return new_state
 #-------------------------------------------------------------------------------------------------
 
 #3 level Hamiltonian
-Dim = 2
+Dim = 4
 N_Controls = 2
 
 

@@ -10,8 +10,8 @@ from scipy.interpolate import interp1d
 import csv
 
 # read excel file into a pandas DataFrame
-df1 = pd.read_csv('..\\Controls\\control1_dim_2_state0to1.csv')
-df2 = pd.read_csv('..\\Controls\\control2_dim_2_state0to1.csv')
+df1 = pd.read_csv('..\\Controls\\control1_dim_6from5_4_state0to1.csv')
+df2 = pd.read_csv('..\\Controls\\control2_dim_6from5_4_state0to1.csv')
 
 # convert the DataFrame into a numpy array
 controls1 = df1.iloc[:, -1].values
@@ -165,7 +165,7 @@ def get_J_T_prev(**kwargs):
 
 def write_functional_values(**kwargs):
     """Write the current value of the objective function to a CSV file."""
-    with open('..\\Analisis\\functional_valuesd_dim_3from2_0to1.csv', 'a', newline='') as csvfile:
+    with open('..\\Analisis\\functional_valuesd_dim_100from654_0to1.csv', 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
         if kwargs['info_vals']:
             iteration = kwargs['iteration']
@@ -184,7 +184,7 @@ def write_functional_values(**kwargs):
 #-------------------------------------------------------------------------------------------------
 
 #3 level Hamiltonian
-Dim = 3   
+Dim = 100
 N_Controls = 2
 
 
