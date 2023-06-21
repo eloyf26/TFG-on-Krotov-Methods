@@ -10,6 +10,13 @@ import krotov
 from scipy.interpolate import CubicSpline
 import csv
 
+#3 level Hamiltonian
+Dim = 2
+N_Controls = 2
+ToleranceDict = {1e-3:"1e-3Tolerance", 1e-2:"1e-2Tolerance"}
+Tolerance = 1e-2
+ToleranceString = ToleranceDict[Tolerance]
+
 def generate_arrays(d1 = [], d2 = []):
     # Create array with d1 on the diagonal
     arr1 = np.diag(d1)
@@ -150,7 +157,7 @@ def get_J_T_prev(**kwargs):
 
 def write_functional_values(**kwargs):
     """Write the current value of the objective function to a CSV file."""
-    with open('..\\Analisis\\functional_valuesd_dim4.csv', 'a', newline='') as csvfile:
+    with open(f'..\\Analisis\\{ToleranceString}\\functional_valuesd_dim{str(Dim)}.csv', 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
         if kwargs['info_vals']:
             iteration = kwargs['iteration']
@@ -177,10 +184,6 @@ def krylov_propagator(H, state, dt, c_ops=None, backwards=False, initialize=Fals
 
     return new_state
 #-------------------------------------------------------------------------------------------------
-
-#3 level Hamiltonian
-Dim = 4
-N_Controls = 2
 
 
 diag = []
@@ -250,7 +253,7 @@ opt_result = krotov.optimize_pulses(
     info_hook=krotov.info_hooks.chain(krotov.info_hooks.print_table(J_T=krotov.functionals.J_T_ss),
                                       write_functional_values),
     check_convergence=krotov.convergence.Or(
-        krotov.convergence.value_below('1e-3', name='J_T'),
+        krotov.convergence.value_below(str(Tolerance), name='J_T'),
         krotov.convergence.check_monotonic_error,
     ),
     store_all_pulses=True,

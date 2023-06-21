@@ -552,11 +552,12 @@ def optimize_pulses(
         #-----------------------------------ELOY------------------------------------------------
         control_num = 0
         to_excel = 1
+        dim = 5
 
         if (to_excel):
             for control in optimized_pulses:
                 control_num += 1
-                filename = '..\\Controls\\control{}_dim_100from6_5_4_state0to1.csv'.format(control_num)
+                filename = '..\\Controls\\1e-2Tolerance\\control{}_dim_{}from4_3_2_state0to1.csv'.format(control_num,dim)
                 if os.path.exists(filename):
                     if (krotov_iteration % 50 == 0) or (bool(check_convergence(result)) is True):
                         df = pd.read_csv(filename)
