@@ -189,12 +189,12 @@ def write_functional_values(**kwargs):
             # ΔJ is the change on J (the sum) and ΔJ_T is the change on J_T_val
             writer.writerow([iteration , J_T_val, Σgₐdt, J, ΔJ_T, ΔJ, secs ])
 
-def custom_propagator(H, dt, rho, c_ops, args=None, options=None):
+def custom_propagator(H, dt, rho, c_ops, args=None, options=None, initialize=False):
     """Propagate the density matrix over a single time step using qutip.propagator."""
-    # Note: this function uses the 'adams' method
+    
     if options is None:
         options = qutip.Options()
-        options.method = 'adams'
+        options.method = 'bdf'
     tlist = [0, dt]
     U = qutip.propagator(H, tlist, c_op_list=[], args=args, options=options)
     # calculate the propagated state by multiplying the propagator with the state
@@ -259,14 +259,17 @@ for i in range(0,Dim):
     projs.append(qutip.ket2dm(qKets[i]))
 
 
-guess_dynamics = objectives[0].mesolve(tlist, e_ops=projs)
-plot_population(guess_dynamics)
+#guess_dynamics = objectives[0].mesolve(tlist, e_ops=projs)
+#plot_population(guess_dynamics)
+
+# Print the type of H for debugging
+print(type(H1))
  
 opt_result = krotov.optimize_pulses(
     objectives,
     pulse_options=pulse_options,
     tlist=tlist,
-    propagator=krotov.propagators.expm,
+    propagator=custom_propagator,
     chi_constructor=krotov.functionals.chis_ss,
     info_hook=krotov.info_hooks.chain(
         krotov.info_hooks.print_table(J_T=krotov.functionals.J_T_ss),
