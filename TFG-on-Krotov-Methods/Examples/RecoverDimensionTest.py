@@ -1,6 +1,6 @@
 import sys
 sys.path.append("../../krotov/src")
-import qutip
+import qutip 
 import numpy as np
 import matplotlib.cm as cm
 import matplotlib.pylab as plt
@@ -11,15 +11,15 @@ import csv
 
 
 #3 level Hamiltonian
-Dim = 5
+Dim = 100
 N_Controls = 2
 ToleranceDict = {1e-3:"1e-3Tolerance", 1e-2:"1e-2Tolerance"}
 Tolerance = 1e-2
 ToleranceString = ToleranceDict[Tolerance]
 
 # read excel file into a pandas DataFrame
-df1 = pd.read_csv(f'..\\Controls\\{ToleranceString}\\control1_dim_4from3_2_state0to1.csv')
-df2 = pd.read_csv(f'..\\Controls\\{ToleranceString}\\control2_dim_4from3_2_state0to1.csv')
+df1 = pd.read_csv(f'..\\Controls\\{ToleranceString}\\control1_dim_12from9_6_3_state0to1.csv')
+df2 = pd.read_csv(f'..\\Controls\\{ToleranceString}\\control2_dim_12from9_6_3_state0to1.csv')
 
 # convert the DataFrame into a numpy array
 controls1 = df1.iloc[:, -1].values
@@ -173,7 +173,7 @@ def get_J_T_prev(**kwargs):
 
 def write_functional_values(**kwargs):
     """Write the current value of the objective function to a CSV file."""
-    with open(f'..\\Analisis\\{ToleranceString}\\functional_valuesd_dim_{Dim}from4_3_2_0to1.csv', 'a', newline='') as csvfile:
+    with open(f'..\\Analisis\\{ToleranceString}\\TESTTfunctional_valuesd_dim_100from12_9_6_3_0to1.csv', 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
         if kwargs['info_vals']:
             iteration = kwargs['iteration']
@@ -187,8 +187,19 @@ def write_functional_values(**kwargs):
             secs = int(kwargs['stop_time'] - kwargs['start_time'])
             # J is the SUM of J_T_val and Σgₐdt
             # ΔJ is the change on J (the sum) and ΔJ_T is the change on J_T_val
-            writer.writerow([iteration, J_T_val, Σgₐdt, J, ΔJ_T, ΔJ, secs ])
+            writer.writerow([iteration , J_T_val, Σgₐdt, J, ΔJ_T, ΔJ, secs ])
 
+def custom_propagator(H, dt, rho, c_ops, args=None, options=None):
+    """Propagate the density matrix over a single time step using qutip.propagator."""
+    # Note: this function uses the 'adams' method
+    if options is None:
+        options = qutip.Options()
+        options.method = 'adams'
+    tlist = [0, dt]
+    U = qutip.propagator(H, tlist, c_op_list=[], args=args, options=options)
+    # calculate the propagated state by multiplying the propagator with the state
+    propagated_rho = U[-1] * rho * U[-1].dag()
+    return propagated_rho
 #-------------------------------------------------------------------------------------------------
 
 diag = []
