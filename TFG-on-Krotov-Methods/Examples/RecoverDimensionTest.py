@@ -14,12 +14,12 @@ import csv
 Dim = 100
 N_Controls = 2
 ToleranceDict = {1e-3:"1e-3Tolerance", 1e-2:"1e-2Tolerance"}
-Tolerance = 1e-2
+Tolerance = 1e-3
 ToleranceString = ToleranceDict[Tolerance]
 
 # read excel file into a pandas DataFrame
-df1 = pd.read_csv(f'..\\Controls\\{ToleranceString}\\control1_dim_12from9_6_3_state0to1.csv')
-df2 = pd.read_csv(f'..\\Controls\\{ToleranceString}\\control2_dim_12from9_6_3_state0to1.csv')
+df1 = pd.read_csv(f'..\\Controls\\{ToleranceString}\\control1_dim_9from6_3_state0to1.csv')
+df2 = pd.read_csv(f'..\\Controls\\{ToleranceString}\\control2_dim_9from6_3_state0to1.csv')
 
 # convert the DataFrame into a numpy array
 controls1 = df1.iloc[:, -1].values
@@ -173,7 +173,7 @@ def get_J_T_prev(**kwargs):
 
 def write_functional_values(**kwargs):
     """Write the current value of the objective function to a CSV file."""
-    with open(f'..\\Analisis\\{ToleranceString}\\TESTTfunctional_valuesd_dim_100from12_9_6_3_0to1.csv', 'a', newline='') as csvfile:
+    with open(f'..\\Analisis\\{ToleranceString}\\functional_valuesd_dim_100from9_6_3_0to1.csv', 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
         if kwargs['info_vals']:
             iteration = kwargs['iteration']
@@ -269,7 +269,7 @@ opt_result = krotov.optimize_pulses(
     objectives,
     pulse_options=pulse_options,
     tlist=tlist,
-    propagator=custom_propagator,
+    propagator=krotov.propagators.expm,
     chi_constructor=krotov.functionals.chis_ss,
     info_hook=krotov.info_hooks.chain(
         krotov.info_hooks.print_table(J_T=krotov.functionals.J_T_ss),

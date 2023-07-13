@@ -553,11 +553,10 @@ def optimize_pulses(
         control_num = 0
         to_excel = 1
         dim = 100
-
         if (to_excel):
             for control in optimized_pulses:
                 control_num += 1
-                filename = '..\\Controls\\1e-2Tolerance\\TESTcontrol{}_dim_{}from12_9_6_3_state0to1.csv'.format(control_num,dim)
+                filename = '..\\Controls\\1e-3Tolerance\\control{}_dim_{}from12_9_6_3_state0to1.csv'.format(control_num,dim)
                 if os.path.exists(filename):
                     if (krotov_iteration % 50 == 0) or (bool(check_convergence(result)) is True):
                         df = pd.read_csv(filename)

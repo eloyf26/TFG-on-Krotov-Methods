@@ -110,7 +110,7 @@ def update_image(value, tolerance):
     for i in range(0, num_images, 6):
         row = dbc.Row([
             dbc.Col([
-                html.H4(os.path.basename(image).split('.')[0], style={'text-align': 'center', 'font-size': '16px'}),
+                html.H4(os.path.basename(image).split('.')[0], style={'text-align': 'center', 'font-size': '8px'}),
                 html.Img(src='data:image/png;base64,'+base64.b64encode(open(image, 'rb').read()).decode(), style=graph_style)
             ], width=col_width)
             for image in selected_images[i:i+6]
